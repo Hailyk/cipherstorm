@@ -1,11 +1,18 @@
 // Created by HailyK on 26/3/2024
 // entry point for the hash cracker
 
+use std::collections::HashSet;
 use std::env;
-mod cipher_module;
+use std::sync::Arc;
+use crate::cracker::crack_manager;
+
+mod ciphers;
 mod cracker;
-mod cracker_manager;
 mod file_system_module;
+
+// password charset
+static CHARLIST: &str =
+    "aAbBcCdDeEfFgGhHiIjJkKlLmMnNoOpPqQrRsStTuUvVwWxXyYzZ0123456789!@#$%&*|?";
 
 fn main() {
     // get command line arguments
@@ -22,7 +29,7 @@ fn main() {
 
     // check for flags in arguments
     let mut cracker_flags: Vec<String> = Vec::new();
-    for mut index in 0..args.len() {
+    for index in 0..args.len() {
         let first_char = args.get(index).unwrap().chars().next().unwrap();
         if first_char == '-' {
             // remove the '-' from the flag
@@ -39,15 +46,46 @@ fn main() {
 
     //create read stream for hash file
     println!("Reading HashList from '{}'", args.get(0).unwrap());
-    let file = file_system_module::FileSystem::new(args.get(0).unwrap());
-    let hash_list = file.read_as_vector("\n");
-
-    // create cracker manager
-    let cm = cracker_manager::CrackerManager::new(cracker_flags, hash_list, "md5", 10);
-    let result = cm.run();
+    let mut file = file_system_module::FileSystem::new(args.get(0).unwrap()).unwrap();
+    let hash_list = file.read_as_vector("\n").unwrap();
     
-    // print the result
-    for item in result {
-        println!("Hash: {} => Plain Text: {}", item.hash, item.plain_text);
+    let num_hashes = hash_list.len();
+    println!("{} hash imported", num_hashes);
+    
+    let mut hash_map: HashSet<String> = HashSet::new();
+    for item in hash_list {
+        if item.contains("\r") {
+            let new_item = item.replace("\r", "");
+            hash_map.insert(new_item);
+        } else {
+            hash_map.insert(item);
+        }
     }
+
+    // check for multi-threading flag
+    let mut multi_thread = false;
+    for flag in cracker_flags {
+        if flag == "-m" {
+            multi_thread = true;
+        } else if flag == "-s" {
+            multi_thread = false;
+        }
+    }
+    
+    // output current character set
+    println!("Using character set: {}", CHARLIST);
+    
+    // convert password charset to vector
+    let password_charset: Vec<String> = CHARLIST.chars().map(|c| c.to_string()).collect();
+    
+    // setup arc variables
+    let hash_map = Arc::new(hash_map);
+    let password_charset = Arc::new(password_charset);
+    
+    // call the cracker
+    crack_manager(hash_map, password_charset, 8, ciphers::Algorithm::Md5,
+                  multi_thread);
+    
+    
+    
 }
