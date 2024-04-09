@@ -15,7 +15,7 @@ static CHARLIST: &str =
     "aAbBcCdDeEfFgGhHiIjJkKlLmMnNoOpPqQrRsStTuUvVwWxXyYzZ0123456789!@#$%&*|?";
 
 //global variables
-static password_length: usize = 8;
+static PASSWORD_LENGTH: usize = 8;
 
 fn main() {
     // get command line arguments
@@ -86,7 +86,7 @@ fn main() {
     let password_charset = Arc::new(password_charset);
     
     // call the cracker
-    crack_manager(hash_map, password_charset, password_length, ciphers::Algorithm::Md5,
+    crack_manager(hash_map, password_charset, PASSWORD_LENGTH, ciphers::Algorithm::Md5,
                   multi_thread);
     
     

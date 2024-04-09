@@ -9,9 +9,10 @@ use std::thread;
 use std::thread::JoinHandle;
 use std::time;
 
-static SPINNER: [char; 4 ] = ['|', '/', '-', '\\'];
+static SPINNER: [char; 4] = ['|', '/', '-', '\\'];
 static SPINNER_SPEED_REDUCER: usize = 80;
 
+// struct for storing the result of the cracker
 pub struct CrackResult {
     pub hash: String,
     pub password: String,
@@ -57,7 +58,7 @@ pub fn crack_manager(
 
     // determine the password list size per thread, 4 seems to be the sweet spot for MD5
     // TODO: make this configurable via command line or a dynamic algorithm
-    let suffix_size = 4;
+    let suffix_size = 3;
 
     let mut suffix_visual = String::new();
     for _ in 0..suffix_size {
@@ -78,6 +79,10 @@ pub fn crack_manager(
 
     // create mpsc::channel for communication between threads
     let (tx, rx) = mpsc::channel();
+
+    // calculate the total number of batches needed, used for progress tracking
+    let total_batches_needed: usize = charset_length.pow((password_length - suffix_size) as u32);
+    let mut progress: usize = 0;
 
     // start the timer
     let start_time = time::Instant::now();
@@ -101,23 +106,11 @@ pub fn crack_manager(
 
         thread_handles.insert(thread_handle.0, thread_handle.1);
 
-        // print the thread created to the terminal
-        let termianl_size = crossterm::terminal::size().unwrap();
-        let termianl_height = termianl_size.1;
-        crossterm::execute!(
-            std::io::stdout(),
-            crossterm::cursor::MoveTo(2, termianl_height),
-            crossterm::cursor::SavePosition,
-            crossterm::cursor::Hide,
-            crossterm::style::Print(format!("Batch {}{} created", thread_name, suffix_visual)),
-            crossterm::cursor::RestorePosition,
-        )
-        .unwrap();
     }
 
     // flag for when the password generation is done
     let mut generation_done = false;
-    
+
     // spiny thingy keeper tracker
     let mut spinner_counter = 0;
 
@@ -128,23 +121,29 @@ pub fn crack_manager(
         if spinner_counter == 4 * SPINNER_SPEED_REDUCER {
             spinner_counter = 0;
         }
-        
+
         // get the spinner character
         let spinner_char = SPINNER[spinner_counter / SPINNER_SPEED_REDUCER];
         
+        // percentage progress
+        let progress_percentage = (progress as f32 / total_batches_needed as f32) * 100.0;
+
         // get terminal size
         let terminal_size = crossterm::terminal::size().unwrap();
         let terminal_height = terminal_size.1;
-        
-        // print the spinner
+
+        // print the spinner and progress
         crossterm::execute!(
             std::io::stdout(),
             crossterm::cursor::Hide,
             crossterm::cursor::MoveTo(0, terminal_height),
             crossterm::cursor::SavePosition,
-            crossterm::style::Print(spinner_char),
-            crossterm::cursor::RestorePosition,
-        ).unwrap();
+            crossterm::style::Print(format!(
+                "{} Progress:{:.2}%:{}/{}: ",
+                spinner_char, progress_percentage, progress, total_batches_needed
+            )),
+        )
+        .unwrap();
 
         // try to get the result in a nonblocking way
         let result = rx.try_recv();
@@ -156,18 +155,17 @@ pub fn crack_manager(
                 // remove the thread handle
                 thread_handles.remove(&result.prefix);
 
+                // increment the progress
+                progress += 1;
+
                 // print the completed thread to the bottom line
                 crossterm::execute!(
                     std::io::stdout(),
-                    crossterm::cursor::MoveTo(2, terminal_height),
-                    crossterm::cursor::SavePosition,
                     crossterm::cursor::Hide,
                     crossterm::style::Print(format!(
-                        "Batch {}{} done",
-                        result.prefix, suffix_visual
+                        "Batch {}{} done", result.prefix, suffix_visual
                     )),
                     crossterm::cursor::RestorePosition,
-                    crossterm::cursor::Show,
                 )
                 .unwrap();
 
@@ -214,8 +212,7 @@ pub fn crack_manager(
                 )
                 .unwrap();
             }
-        }
-        else { 
+        } else {
             // sleep
             thread::sleep(time::Duration::from_millis(10));
         }
