@@ -101,9 +101,6 @@ pub fn crack_manager(
             algorithm,
         );
 
-        // make the copy of the thread name
-        let thread_name = thread_handle.0.clone();
-
         thread_handles.insert(thread_handle.0, thread_handle.1);
 
     }
