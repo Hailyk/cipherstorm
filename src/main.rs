@@ -10,6 +10,7 @@ mod ciphers;
 mod cracker;
 mod file_system_module;
 
+// password charset
 static CHARLIST: &str =
     "aAbBcCdDeEfFgGhHiIjJkKlLmMnNoOpPqQrRsStTuUvVwWxXyYzZ0123456789!@#$%&*|?";
 
@@ -28,7 +29,7 @@ fn main() {
 
     // check for flags in arguments
     let mut cracker_flags: Vec<String> = Vec::new();
-    for mut index in 0..args.len() {
+    for index in 0..args.len() {
         let first_char = args.get(index).unwrap().chars().next().unwrap();
         if first_char == '-' {
             // remove the '-' from the flag
@@ -48,6 +49,9 @@ fn main() {
     let mut file = file_system_module::FileSystem::new(args.get(0).unwrap()).unwrap();
     let hash_list = file.read_as_vector("\n").unwrap();
     
+    let num_hashes = hash_list.len();
+    println!("{} hash imported", num_hashes);
+    
     let mut hash_map: HashSet<String> = HashSet::new();
     for item in hash_list {
         if item.contains("\r") {
@@ -63,8 +67,13 @@ fn main() {
     for flag in cracker_flags {
         if flag == "-m" {
             multi_thread = true;
+        } else if flag == "-s" {
+            multi_thread = false;
         }
     }
+    
+    // output current character set
+    println!("Using character set: {}", CHARLIST);
     
     // convert password charset to vector
     let password_charset: Vec<String> = CHARLIST.chars().map(|c| c.to_string()).collect();

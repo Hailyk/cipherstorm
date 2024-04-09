@@ -1,4 +1,3 @@
-// Created by HailyK on 28/3/2024
 // cracker used cracking hashes
 
 use std::collections::{HashMap, HashSet};
@@ -38,11 +37,14 @@ pub fn crack_manager(hash_set: Arc<HashSet<String>>, password_charset: Arc<Vec<S
             println!("Error getting available parallelism: {}", available_paralism_result.err().unwrap());
             println!("Reducing parallelism to 1");
         }
+    } else { 
+        println!("Running in single thread mode");
     }
 
     let charset_length = password_charset.len();
 
-    // determine the password list size per thread, 3 seems to be the sweet spot for MD5
+    // determine the password list size per thread, 4 seems to be the sweet spot for MD5
+    // TODO: make this configurable via command line or a dynamic algorithm
     let suffix_size = 4;
 
     // calculate the password prefix last index
@@ -73,11 +75,12 @@ pub fn crack_manager(hash_set: Arc<HashSet<String>>, password_charset: Arc<Vec<S
         thread_handles.insert(thread_handle.0, thread_handle.1);
     }
 
+    let mut generation_done = false;
+    
     // listen for result and spawn new thread when a thread finishes
     loop {
         let result = rx.recv().unwrap();
         if result.exit_done {
-            println!("Thread {} done", result.prefix);
             
             // remove the thread handle
             thread_handles.remove(&result.prefix);
@@ -87,14 +90,19 @@ pub fn crack_manager(hash_set: Arc<HashSet<String>>, password_charset: Arc<Vec<S
                                                      &mut password_indexer, suffix_size,
                                                      charset_length, algorithm);
             if thread_handle.2 {
-                // all password generated
-                break;
+                // all password generated, wait for all threads to finish
+                generation_done = true;
+                
+                // wait for all threads to finish
+                if thread_handles.is_empty() {
+                    break;
+                }
             }
-
-            println!("Thread {} spawned", thread_handle.0);
             
             // insert the new thread handle
-            thread_handles.insert(thread_handle.0, thread_handle.1);
+            if !generation_done {
+                thread_handles.insert(thread_handle.0, thread_handle.1);
+            }
         }
         else {
             // calculate the time taken
@@ -112,12 +120,12 @@ fn crack_spawner_helper(tx: mpsc::Sender<CrackResult>, hash_set: Arc<HashSet<Str
                         password_indexer: &mut Vec<isize>, suffix_size: usize,
                         charset_length: usize, algorithm: Algorithm) -> (String, JoinHandle<()>,
                                                                          bool) {
+    // clone the tx so multiple threads can send result to single listener
     let tx_clone = tx.clone();
 
     // calculate the password prefix last index
     let last_index = password_length - suffix_size;
-
-
+    
     // create the password prefix for the thread
     let mut prefix: String = String::new();
     for index in 0..last_index {
@@ -166,7 +174,7 @@ fn crack_instance(hash_list: Arc<HashSet<String>>, password_charset: Arc<Vec<Str
                   password_receiver: mpsc::Sender<CrackResult>) -> JoinHandle<()> {
     // build the thread
     let thread_name = format!("Cracker-{}", password_prefix);
-    let mut built_thread = thread::Builder::new().name(thread_name);
+    let built_thread = thread::Builder::new().name(thread_name);
 
     // spawn the thread
     let spawned_thread: thread::JoinHandle<_> = built_thread.spawn(move || {

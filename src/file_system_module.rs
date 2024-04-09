@@ -35,7 +35,7 @@ impl FileSystem {
         let mut data = String::new();
 
         // read data from file
-        &self.file.read_to_string(&mut data).unwrap();
+        let _ = &self.file.read_to_string(&mut data).unwrap();
 
         // split data by deliminator
         let data = data.split(deliminator);
