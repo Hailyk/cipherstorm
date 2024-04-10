@@ -15,7 +15,7 @@ compile to custom directory:
 
 ## usage / options
 the compiled binary takes a hash list file and options.
-example: `./bin/cipherstorm password.hash -m
+example: `./cipherstorm password.hash -m`
 
 flags:
 - `-m` : multi-threaded mode

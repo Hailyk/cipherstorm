@@ -218,6 +218,18 @@ pub fn crack_manager(
 
 /// spawn next instance of the cracker, spawns a thread for password cracking, returns the thread
 /// handle
+/// @param tx: mpsc::Sender<CrackResult>
+/// @param hash_set: Arc<HashSet<String>>
+/// @param password_charset: Arc<Vec<String>>
+/// @param password_length: usize
+/// @param password_indexer: &mut Vec<isize>
+/// @param suffix_size: usize
+/// @param charset_length: usize
+/// @param algorithm: Algorithm
+/// @return (String, JoinHandle<()>, bool)
+/// @private
+/// @description: setup and spawn next instance of the cracker
+/// @warning: this function is not meant to be called directly
 
 fn crack_spawner_helper(
     tx: mpsc::Sender<CrackResult>,
@@ -287,6 +299,13 @@ fn crack_spawner_helper(
 
 /// instance of the cracker, spawns a thread for password cracking, result in returned through a
 /// channel to reduce delay and overhead multi password list
+/// @param hash_list: Arc<HashSet<String>>
+/// @param password_charset: Arc<Vec<String>>
+/// @param password_prefix: String
+/// @param password_gen_size: usize
+/// @param algorithm: Algorithm
+/// @param password_receiver: mpsc::Sender<CrackResult>
+/// @return JoinHandle<()>
 /// @private
 /// @description: instance of the cracker
 /// @return thread::Thread

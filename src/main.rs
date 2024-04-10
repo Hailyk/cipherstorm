@@ -17,6 +17,7 @@ static CHARLIST: &str =
 //global variables
 static PASSWORD_LENGTH: usize = 8;
 
+/// entry point for the hash cracker
 fn main() {
     // get command line arguments
     let mut args: Vec<String> = env::args().collect();
@@ -34,8 +35,8 @@ fn main() {
     let mut cracker_flags: Vec<String> = Vec::new();
     for index in 0..args.len() {
         let first_char = args.get(index).unwrap().chars().next().unwrap();
+        // check for the items in command line that has '-' as the first character
         if first_char == '-' {
-            // remove the '-' from the flag
             let flag = args.get(index).unwrap().clone();
             cracker_flags.push(flag);
         }
@@ -55,14 +56,16 @@ fn main() {
     let num_hashes = hash_list.len();
     println!("{} hash imported", num_hashes);
     
+    //insert into hash map
     let mut hash_map: HashSet<String> = HashSet::new();
-    for item in hash_list {
+    for mut item in hash_list {
+        // check for character return
         if item.contains("\r") {
-            let new_item = item.replace("\r", "");
-            hash_map.insert(new_item);
-        } else {
-            hash_map.insert(item);
+            // remove the character return, specifically for windows
+            item = item.replace("\r", "");
         }
+        // insert the item into the hash map
+        hash_map.insert(item);
     }
 
     // check for multi-threading flag
@@ -81,7 +84,7 @@ fn main() {
     // convert password charset to vector
     let password_charset: Vec<String> = CHARLIST.chars().map(|c| c.to_string()).collect();
     
-    // setup arc variables
+    // setup arc variables to allow multiple threads to access the same data
     let hash_map = Arc::new(hash_map);
     let password_charset = Arc::new(password_charset);
     
