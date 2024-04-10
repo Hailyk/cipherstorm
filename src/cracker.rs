@@ -10,7 +10,7 @@ use std::thread::JoinHandle;
 use std::time;
 
 static SPINNER: [char; 4] = ['|', '/', '-', '\\'];
-static SPINNER_SPEED_REDUCER: usize = 80;
+static SPINNER_SPEED_REDUCER: usize = 10;
 
 // struct for storing the result of the cracker
 pub struct CrackResult {
@@ -56,7 +56,7 @@ pub fn crack_manager(
 
     let charset_length = password_charset.len();
 
-    // determine the password list size per thread, 4 seems to be the sweet spot for MD5
+    // determine the password list size per thread, 3 seems to be the sweet spot for MD5
     // TODO: make this configurable via command line or a dynamic algorithm
     let suffix_size = 3;
 
