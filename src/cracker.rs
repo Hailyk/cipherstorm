@@ -10,7 +10,7 @@ use std::thread::JoinHandle;
 use std::time;
 
 static SPINNER: [char; 4] = ['|', '/', '-', '\\'];
-static SPINNER_SPEED_REDUCER: usize = 80;
+static SPINNER_SPEED_REDUCER: usize = 10;
 
 // struct for storing the result of the cracker
 pub struct CrackResult {
