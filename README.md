@@ -15,14 +15,14 @@ compile to custom directory:
 
 ## usage / options
 the compiled binary takes a hash list file and options.
-example: `./bin/cipherstorm password.hash -m
+example: `./cipherstorm password.hash -m`
 
 flags:
 - `-m` : multi-threaded mode
 - `-s` : (default) single-threaded mode
 
 ## benchmark
-- 5.44M/s on Ryzen 7 3700x (16 threads) @ 4.1GHz
+- 5.4M/s on Ryzen 7 3700x (16 threads) @ 4.1GHz
 - 340k/s on Ryzen 7 3700x (single thread) @ 4.1GHz
 
 ## notes on implementation
